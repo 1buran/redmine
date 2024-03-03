@@ -2,7 +2,8 @@
 
 This is a lightweight Redmine API client.
 
-> [!CAUTION] I created it for my own personal use (while I was learning the Go language),
+> [!CAUTION]
+> I created it for my own personal use (while I was learning the Go language),
 > you probably shouldn't use it! At least until it ready for production: ver >= 1.0.
 
 I wanted create something like TUI of Redmine, but when i dive into learning of TUI libs like bubbletea, i spent all my free time slots and this idea was on pause for a while...until once i needed
