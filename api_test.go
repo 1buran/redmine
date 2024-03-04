@@ -196,51 +196,56 @@ func TestScroll(t *testing.T) {
 	}
 
 	// test scrolling of projects
-	i := 1
-	for p := range Scroll[Project](&apiConfig) {
-		expectedDesc := fmt.Sprintf("Project %d Description", i)
-		if p.Desc != expectedDesc {
-			t.Errorf("expected %s, got %s", expectedDesc, p.Desc)
+	t.Run("scroll projects", func(t *testing.T) {
+		i := 1
+		for p := range Scroll[Project](&apiConfig) {
+			expectedDesc := fmt.Sprintf("Project %d Description", i)
+			if p.Desc != expectedDesc {
+				t.Errorf("expected %s, got %s", expectedDesc, p.Desc)
+			}
+			if p.Id != i {
+				t.Errorf("expected %d, got %d", i, p.Id)
+			}
+			i++
 		}
-		if p.Id != i {
-			t.Errorf("expected %d, got %d", i, p.Id)
+		if i-1 != TotalCount {
+			t.Errorf("expected %d items, got: %d", TotalCount, i-1)
 		}
-		i++
-	}
-	if i-1 != TotalCount {
-		t.Errorf("expected %d items, got: %d", TotalCount, i-1)
-	}
+	})
 
 	// test scrolling of issues
-	i = 1
-	for p := range Scroll[Issue](&apiConfig) {
-		expectedDesc := fmt.Sprintf("Issue %d Description", i)
-		if p.Desc != expectedDesc {
-			t.Errorf("expected %s, got %s", expectedDesc, p.Desc)
+	t.Run("scroll issues", func(t *testing.T) {
+		i := 1
+		for p := range Scroll[Issue](&apiConfig) {
+			expectedDesc := fmt.Sprintf("Issue %d Description", i)
+			if p.Desc != expectedDesc {
+				t.Errorf("expected %s, got %s", expectedDesc, p.Desc)
+			}
+			if p.Id != i {
+				t.Errorf("expected %d, got %d", i, p.Id)
+			}
+			i++
 		}
-		if p.Id != i {
-			t.Errorf("expected %d, got %d", i, p.Id)
+		if i-1 != TotalCount {
+			t.Errorf("expected %d items, got: %d", TotalCount, i-1)
 		}
-		i++
-	}
-	if i-1 != TotalCount {
-		t.Errorf("expected %d items, got: %d", TotalCount, i-1)
-	}
+	})
 
 	// test scrolling of time entries
-	i = 1
-	for p := range Scroll[TimeEntry](&apiConfig) {
-		expectedDesc := fmt.Sprintf("Time Entry %d Comment", i)
-		if p.Comment != expectedDesc {
-			t.Errorf("expected %s, got %s", expectedDesc, p.Comment)
+	t.Run("scroll time entries", func(t *testing.T) {
+		i := 1
+		for p := range Scroll[TimeEntry](&apiConfig) {
+			expectedDesc := fmt.Sprintf("Time Entry %d Comment", i)
+			if p.Comment != expectedDesc {
+				t.Errorf("expected %s, got %s", expectedDesc, p.Comment)
+			}
+			if p.Id != i {
+				t.Errorf("expected %d, got %d", i, p.Id)
+			}
+			i++
 		}
-		if p.Id != i {
-			t.Errorf("expected %d, got %d", i, p.Id)
+		if i-1 != TotalCount {
+			t.Errorf("expected %d items, got: %d", TotalCount, i-1)
 		}
-		i++
-	}
-	if i-1 != TotalCount {
-		t.Errorf("expected %d items, got: %d", TotalCount, i-1)
-	}
-
+	})
 }
