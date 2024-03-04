@@ -47,6 +47,40 @@ const (
        "limit": {{ .Limit }},
        "total_count": {{ .Total }}
      }`
+
+	IssuesJSONResponseTpl = `
+     {
+       "issues": [
+       {{- range $i := Iter .First .Last }}
+          {
+            "id": {{ $i }}, "subject": "Subject {{ $i }}",
+            "description": "Issue {{ $i }} Description",
+            "project": {"id": 1, "name": "Project1"}
+          }{{ if lt $i $.Last }},{{ end }}
+        {{- end }}
+       ],
+       "offset": {{ .Offset }},
+       "limit": {{ .Limit }},
+       "total_count": {{ .Total }}
+     }`
+
+	TimeEntriesJSONResponseTpl = `
+     {
+       "time_entries": [
+       {{- range $i := Iter .First .Last }}
+          {
+            "id": {{ $i }}, "comments": "Time Entry {{ $i }} Comment",
+            "project": {"id": 1, "name": "Project1"},
+            "issue": {"id": {{ $i }}, "subject": "Subject {{ $i }}"},
+            "user": {"id": 1, "name": "User1"},
+            "hours": 7.35, "spent_on": "2006-01-02"
+          }{{ if lt $i $.Last }},{{ end }}
+        {{- end }}
+       ],
+       "offset": {{ .Offset }},
+       "limit": {{ .Limit }},
+       "total_count": {{ .Total }}
+     }`
 )
 
 // Redmine API JSON response parameters
@@ -134,9 +168,9 @@ func TestScroll(t *testing.T) {
 		case ProjectsApiEndpoint:
 			payload = GenerateJSON(ProjectsJSONResponseTpl, params)
 		case IssuesApiEndpoint:
-			w.Write([]byte(`{}`))
+			payload = GenerateJSON(IssuesJSONResponseTpl, params)
 		case TimeEntriesEndpoint:
-			w.Write([]byte(`{}`))
+			payload = GenerateJSON(TimeEntriesJSONResponseTpl, params)
 		default:
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -161,6 +195,7 @@ func TestScroll(t *testing.T) {
 		timeEntriesFilter,
 	}
 
+	// test scrolling of projects
 	i := 1
 	for p := range Scroll[Project](&apiConfig) {
 		expectedDesc := fmt.Sprintf("Project %d Description", i)
@@ -175,4 +210,37 @@ func TestScroll(t *testing.T) {
 	if i-1 != TotalCount {
 		t.Errorf("expected %d items, got: %d", TotalCount, i-1)
 	}
+
+	// test scrolling of issues
+	i = 1
+	for p := range Scroll[Issue](&apiConfig) {
+		expectedDesc := fmt.Sprintf("Issue %d Description", i)
+		if p.Desc != expectedDesc {
+			t.Errorf("expected %s, got %s", expectedDesc, p.Desc)
+		}
+		if p.Id != i {
+			t.Errorf("expected %d, got %d", i, p.Id)
+		}
+		i++
+	}
+	if i-1 != TotalCount {
+		t.Errorf("expected %d items, got: %d", TotalCount, i-1)
+	}
+
+	// test scrolling of time entries
+	i = 1
+	for p := range Scroll[TimeEntry](&apiConfig) {
+		expectedDesc := fmt.Sprintf("Time Entry %d Comment", i)
+		if p.Comment != expectedDesc {
+			t.Errorf("expected %s, got %s", expectedDesc, p.Comment)
+		}
+		if p.Id != i {
+			t.Errorf("expected %d, got %d", i, p.Id)
+		}
+		i++
+	}
+	if i-1 != TotalCount {
+		t.Errorf("expected %d items, got: %d", TotalCount, i-1)
+	}
+
 }

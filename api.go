@@ -33,9 +33,9 @@ type ApiConfig struct {
 
 type Issue struct {
 	Id      int    `json:"id"`
-	Project int    `json:"project/name"`
 	Subject string `json:"subject"`
 	Desc    string `json:"description"`
+	Project `json:"project"`
 }
 
 type Project struct {
@@ -93,7 +93,7 @@ func (t TimeEntry) String() string {
 }
 
 func (i Issue) String() string {
-	return fmt.Sprintf("%-5d %s", i.Id, i.Subject)
+	return fmt.Sprintf("%-5d %s %s", i.Id, i.Project.Name, i.Subject)
 }
 
 type Entities interface {
