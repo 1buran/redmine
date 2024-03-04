@@ -196,7 +196,7 @@ func TestScroll(t *testing.T) {
 	}
 
 	// test scrolling of projects
-	t.Run("scroll projects", func(t *testing.T) {
+	t.Run("projects", func(t *testing.T) {
 		i := 1
 		for p := range Scroll[Project](&apiConfig) {
 			expectedDesc := fmt.Sprintf("Project %d Description", i)
@@ -214,7 +214,7 @@ func TestScroll(t *testing.T) {
 	})
 
 	// test scrolling of issues
-	t.Run("scroll issues", func(t *testing.T) {
+	t.Run("issues", func(t *testing.T) {
 		i := 1
 		for p := range Scroll[Issue](&apiConfig) {
 			expectedDesc := fmt.Sprintf("Issue %d Description", i)
@@ -232,7 +232,7 @@ func TestScroll(t *testing.T) {
 	})
 
 	// test scrolling of time entries
-	t.Run("scroll time entries", func(t *testing.T) {
+	t.Run("time entries", func(t *testing.T) {
 		i := 1
 		for p := range Scroll[TimeEntry](&apiConfig) {
 			expectedDesc := fmt.Sprintf("Time Entry %d Comment", i)
