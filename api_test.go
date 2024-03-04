@@ -198,7 +198,8 @@ func TestScroll(t *testing.T) {
 	// test scrolling of projects
 	t.Run("projects", func(t *testing.T) {
 		i := 1
-		for p := range Scroll[Project](&apiConfig) {
+		dataChan, _ := Scroll[Project](&apiConfig)
+		for p := range dataChan {
 			expectedDesc := fmt.Sprintf("Project %d Description", i)
 			if p.Desc != expectedDesc {
 				t.Errorf("expected %s, got %s", expectedDesc, p.Desc)
@@ -216,7 +217,8 @@ func TestScroll(t *testing.T) {
 	// test scrolling of issues
 	t.Run("issues", func(t *testing.T) {
 		i := 1
-		for p := range Scroll[Issue](&apiConfig) {
+		dataChan, _ := Scroll[Issue](&apiConfig)
+		for p := range dataChan {
 			expectedDesc := fmt.Sprintf("Issue %d Description", i)
 			if p.Desc != expectedDesc {
 				t.Errorf("expected %s, got %s", expectedDesc, p.Desc)
@@ -234,7 +236,8 @@ func TestScroll(t *testing.T) {
 	// test scrolling of time entries
 	t.Run("time entries", func(t *testing.T) {
 		i := 1
-		for p := range Scroll[TimeEntry](&apiConfig) {
+		dataChan, _ := Scroll[TimeEntry](&apiConfig)
+		for p := range dataChan {
 			expectedDesc := fmt.Sprintf("Time Entry %d Comment", i)
 			if p.Comment != expectedDesc {
 				t.Errorf("expected %s, got %s", expectedDesc, p.Comment)
@@ -246,6 +249,20 @@ func TestScroll(t *testing.T) {
 		}
 		if i-1 != TotalCount {
 			t.Errorf("expected %d items, got: %d", TotalCount, i-1)
+		}
+	})
+
+	// test unknown entity
+	t.Run("404 http error", func(t *testing.T) {
+		apiConfig.Url += "/not-found"
+		dataChan, errChan := Scroll[Project](&apiConfig)
+		for {
+			select {
+			case <-dataChan:
+				t.Fatal("expected not found error")
+			case <-errChan:
+				return
+			}
 		}
 	})
 }

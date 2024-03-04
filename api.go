@@ -113,7 +113,7 @@ func DecodeResp[E Entities](body io.ReadCloser) (*ApiResponse[E], error) {
 
 	data, err := io.ReadAll(body)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// KLUDGE because there is no way to make generic struct tag,
@@ -130,7 +130,7 @@ func DecodeResp[E Entities](body io.ReadCloser) (*ApiResponse[E], error) {
 		b = bytes.Replace(data, []byte("time_entries"), []byte("Items"), 1)
 	}
 	if err = json.Unmarshal(b, &apiResp); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// TODO find a way to make generic struct tag for simplify code:
@@ -216,27 +216,30 @@ func Get[E Entities](ac *ApiConfig, page int) (*ApiResponse[E], error) {
 // 0  25 53 - [0, 25] page=1
 // 25 25 53 - [25, 50] page=2
 // 50 25 53 - [50, 53] page=3
-func Scroll[E Entities](ac *ApiConfig) <-chan E {
+func Scroll[E Entities](ac *ApiConfig) (<-chan E, <-chan error) {
 	var p int
-	c := make(chan E)
+	dataChan := make(chan E)
+	errChan := make(chan error)
 
 	go func() {
-		defer close(c)
+		defer close(dataChan)
+		defer close(errChan)
 		oneMore := true
 		for oneMore {
 			r, err := Get[E](ac, p)
 			if err != nil {
-				panic(err)
+				errChan <- err
+				continue
 			}
 			if r.Limit > 0 {
 				p = (r.Offset+r.Limit)/r.Limit + 1
 			}
 			oneMore = r.Total-r.Offset > r.Limit
 			for _, v := range r.Items {
-				c <- v
+				dataChan <- v
 			}
 		}
 	}()
 
-	return c
+	return dataChan, errChan
 }
