@@ -252,17 +252,20 @@ func TestScroll(t *testing.T) {
 		}
 	})
 
-	// test unknown entity
+	// test HTTP 404 Not Found error
 	t.Run("404 http error", func(t *testing.T) {
 		apiConfig.Url += "/not-found"
+
 		dataChan, errChan := Scroll[Project](&apiConfig)
-		for {
-			select {
-			case <-dataChan:
-				t.Fatal("expected not found error")
-			case <-errChan:
-				return
-			}
+
+		select {
+		case x := <-dataChan:
+			t.Fatalf("expected not found error, got: %v", x)
+		case <-errChan:
+			return
+		case <-time.After(time.Second * 10):
+			t.Fatal("Time out: http server does not respond")
 		}
+
 	})
 }
