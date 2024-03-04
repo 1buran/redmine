@@ -204,7 +204,7 @@ func Get[E Entities](ac *ApiConfig, page int) (*ApiResponse[E], error) {
 		return nil, err
 	}
 	if ac.LogEnabled {
-		log.Printf("< %d %s", res.StatusCode, res.Status)
+		log.Printf("< %s", res.Status)
 	}
 
 	return DecodeResp[E](res.Body)
