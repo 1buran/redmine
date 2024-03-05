@@ -1,6 +1,9 @@
-# Introduction
+# Redmine REST API client
+[![codecov](https://codecov.io/github/mrBuran/redmine/graph/badge.svg?token=NNJYP8B5V8)](https://codecov.io/github/mrBuran/redmine)
 
 This is a lightweight Redmine API client.
+
+## Introduction
 
 > [!CAUTION]
 > I created it for my own personal use (while I was learning the Go language),
