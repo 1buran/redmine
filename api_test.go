@@ -158,6 +158,22 @@ func GetResponseParamsFromUrl(qs string) *ApiResponseParams {
 	return &p
 }
 
+func CreateApiConfig(url string) (ac *ApiConfig) {
+	// Actually the filtration is not used in tests, but its needed for apiConfig.
+	timeEntriesFilter := TimeEntriesFilter{
+		time.Now(),
+		time.Now().Add(time.Hour * 24 * 10),
+		"1",
+	}
+	apiConfig := ApiConfig{
+		url,
+		"ababab",
+		true,
+		timeEntriesFilter,
+	}
+	return &apiConfig
+}
+
 // Test scroll over Redmine REST API paginated JSON resposes
 func TestScroll(t *testing.T) {
 	handleReq := func(w http.ResponseWriter, r *http.Request) {
@@ -183,23 +199,11 @@ func TestScroll(t *testing.T) {
 	testServer := httptest.NewServer(handler)
 	defer testServer.Close()
 
-	// Actually the filtration is not used in tests, but its needed for apiConfig.
-	timeEntriesFilter := TimeEntriesFilter{
-		time.Now(),
-		time.Now().Add(time.Hour * 24 * 10),
-		"1",
-	}
-	apiConfig := ApiConfig{
-		testServer.URL,
-		"ababab",
-		true,
-		timeEntriesFilter,
-	}
-
 	// test scrolling of projects
 	t.Run("projects", func(t *testing.T) {
 		i := 1
-		dataChan, _ := Scroll[Project](&apiConfig)
+		apiConfig := CreateApiConfig(testServer.URL)
+		dataChan, _ := Scroll[Project](apiConfig)
 		for p := range dataChan {
 			expectedDesc := fmt.Sprintf("Project %d Description", i)
 			if p.Desc != expectedDesc {
@@ -218,7 +222,8 @@ func TestScroll(t *testing.T) {
 	// test scrolling of issues
 	t.Run("issues", func(t *testing.T) {
 		i := 1
-		dataChan, _ := Scroll[Issue](&apiConfig)
+		apiConfig := CreateApiConfig(testServer.URL)
+		dataChan, _ := Scroll[Issue](apiConfig)
 		for p := range dataChan {
 			expectedDesc := fmt.Sprintf("Issue %d Description", i)
 			if p.Desc != expectedDesc {
@@ -237,7 +242,8 @@ func TestScroll(t *testing.T) {
 	// test scrolling of time entries
 	t.Run("time entries", func(t *testing.T) {
 		i := 1
-		dataChan, _ := Scroll[TimeEntry](&apiConfig)
+		apiConfig := CreateApiConfig(testServer.URL)
+		dataChan, _ := Scroll[TimeEntry](apiConfig)
 		for p := range dataChan {
 			expectedDesc := fmt.Sprintf("Time Entry %d Comment", i)
 			if p.Comment != expectedDesc {
@@ -255,8 +261,8 @@ func TestScroll(t *testing.T) {
 
 	// test HTTP 404 Not Found error
 	t.Run("404 http error", func(t *testing.T) {
-		apiConfig.Url += "/not-found"
-		dataChan, errChan := Scroll[Project](&apiConfig)
+		apiConfig := CreateApiConfig(testServer.URL + "/not-found")
+		dataChan, errChan := Scroll[Project](apiConfig)
 
 		select {
 		case x := <-dataChan:
@@ -273,8 +279,8 @@ func TestScroll(t *testing.T) {
 
 	// test http error
 	t.Run("http error", func(t *testing.T) {
-		apiConfig.Url = "sd://sdsdsd"
-		dataChan, errChan := Scroll[Project](&apiConfig)
+		apiConfig := CreateApiConfig("sd://sdsdsd")
+		dataChan, errChan := Scroll[Project](apiConfig)
 
 		select {
 		case x := <-dataChan:
@@ -291,9 +297,8 @@ func TestScroll(t *testing.T) {
 
 	// test malformed Redmine API endpoint url
 	t.Run("malformed api endpoint url", func(t *testing.T) {
-		apiConfig.Url = "\n"
-		dataChan, errChan := Scroll[Project](&apiConfig)
-
+		apiConfig := CreateApiConfig("\n")
+		dataChan, errChan := Scroll[Project](apiConfig)
 		select {
 		case x := <-dataChan:
 			t.Fatalf("expected not found error, got: %v", x)
@@ -306,7 +311,6 @@ func TestScroll(t *testing.T) {
 			t.Fatal("Time out: http server does not respond")
 		}
 	})
-
 }
 
 type fakeReadCloser struct{}
