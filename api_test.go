@@ -256,7 +256,6 @@ func TestScroll(t *testing.T) {
 	// test HTTP 404 Not Found error
 	t.Run("404 http error", func(t *testing.T) {
 		apiConfig.Url += "/not-found"
-
 		dataChan, errChan := Scroll[Project](&apiConfig)
 
 		select {
@@ -270,14 +269,11 @@ func TestScroll(t *testing.T) {
 		case <-time.After(time.Second * 10):
 			t.Fatal("Time out: http server does not respond")
 		}
-
 	})
 
 	// test http error
 	t.Run("http error", func(t *testing.T) {
-		oldUrl := apiConfig.Url
 		apiConfig.Url = "sd://sdsdsd"
-
 		dataChan, errChan := Scroll[Project](&apiConfig)
 
 		select {
@@ -291,15 +287,11 @@ func TestScroll(t *testing.T) {
 		case <-time.After(time.Second * 10):
 			t.Fatal("Time out: http server does not respond")
 		}
-
-		apiConfig.Url = oldUrl
 	})
 
 	// test malformed Redmine API endpoint url
 	t.Run("malformed api endpoint url", func(t *testing.T) {
-		oldUrl := apiConfig.Url
 		apiConfig.Url = "\n"
-
 		dataChan, errChan := Scroll[Project](&apiConfig)
 
 		select {
@@ -313,8 +305,21 @@ func TestScroll(t *testing.T) {
 		case <-time.After(time.Second * 10):
 			t.Fatal("Time out: http server does not respond")
 		}
-
-		apiConfig.Url = oldUrl
 	})
 
+}
+
+type fakeReadCloser struct{}
+
+func (f *fakeReadCloser) Read(b []byte) (n int, err error) {
+	return 0, errors.New("abort read")
+}
+
+func (f *fakeReadCloser) Close() error { return errors.New("abort close") }
+
+func TestDecodeResp(t *testing.T) {
+	f := fakeReadCloser{}
+	if _, err := DecodeResp[Project](&f); !errors.Is(err, IoReadError) {
+		t.Errorf("expected IoReadError, got: %s", err)
+	}
 }
