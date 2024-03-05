@@ -273,8 +273,8 @@ func TestScroll(t *testing.T) {
 
 	})
 
-	// test malformed Redmine API endpoint url
-	t.Run("malformed api endpoint url", func(t *testing.T) {
+	// test http error
+	t.Run("http error", func(t *testing.T) {
 		oldUrl := apiConfig.Url
 		apiConfig.Url = "sd://sdsdsd"
 
@@ -286,6 +286,28 @@ func TestScroll(t *testing.T) {
 		case err := <-errChan:
 			if !errors.Is(err, HttpError) {
 				t.Fatalf("expected HttpError, got: %s", err)
+			}
+			return
+		case <-time.After(time.Second * 10):
+			t.Fatal("Time out: http server does not respond")
+		}
+
+		apiConfig.Url = oldUrl
+	})
+
+	// test malformed Redmine API endpoint url
+	t.Run("malformed api endpoint url", func(t *testing.T) {
+		oldUrl := apiConfig.Url
+		apiConfig.Url = "\n"
+
+		dataChan, errChan := Scroll[Project](&apiConfig)
+
+		select {
+		case x := <-dataChan:
+			t.Fatalf("expected not found error, got: %v", x)
+		case err := <-errChan:
+			if !errors.Is(err, ApiEndpointUrlFatalError) {
+				t.Fatalf("expected ApiEndpointUrlFatalError, got: %v", err)
 			}
 			return
 		case <-time.After(time.Second * 10):

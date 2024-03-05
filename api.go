@@ -206,6 +206,10 @@ func Get[E Entities](ac *ApiConfig, page int) (*ApiResponse[E], error) {
 
 	req, err := http.NewRequest("GET", api_endpoint_url, nil)
 	if err != nil {
+		// actually this block is never be run cos the url already passed the validation
+		// in ApiEndpointURL function,
+		// method is correct and hardcoded, there are no other cases when the
+		// NewRequest will failed (check the source code)
 		return nil, errors.Join(ApiNewRequestFatalError, err)
 	}
 	req.Header.Add("User-Agent", "redmine go client v0.1")
@@ -251,9 +255,11 @@ func Scroll[E Entities](ac *ApiConfig) (<-chan E, <-chan error) {
 				case errors.Is(err, IoReadError):
 					log.Println(err)
 				case errors.Is(err, ApiEndpointUrlFatalError):
-					log.Fatal("fatal error", err)
+					log.Println("fatal error: ", err)
+					break
 				case errors.Is(err, ApiNewRequestFatalError):
-					log.Fatal("fatal error", err)
+					log.Println("fatal error: ", err)
+					break
 				case errors.Is(err, HttpError):
 					log.Println(err)
 					// TODO control retries: count and delay...
