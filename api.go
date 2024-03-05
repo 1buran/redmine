@@ -3,6 +3,7 @@ package redmine
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -58,10 +59,20 @@ type Date struct {
 	time.Time
 }
 
+var (
+	JsonDecodeError          = errors.New("JSON decode error")
+	IoReadError              = errors.New("io.ReadAll error")
+	UrlJoinPathError         = errors.New("url.JoinPath error")
+	UrlParseError            = errors.New("url.Parse error")
+	ApiEndpointUrlFatalError = errors.New("cannot build API endpoint url")
+	ApiNewRequestFatalError  = errors.New("cannot create a new request with given url")
+	HttpError                = errors.New("http error")
+)
+
 func (d *Date) UnmarshalJSON(b []byte) error {
 	t, err := time.Parse("2006-01-02", string(bytes.Trim(b, "\"")))
 	if err != nil {
-		return err
+		return errors.Join(JsonDecodeError, err)
 	}
 	d.Time = t
 	return nil
@@ -113,7 +124,7 @@ func DecodeResp[E Entities](body io.ReadCloser) (*ApiResponse[E], error) {
 
 	data, err := io.ReadAll(body)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(IoReadError, err)
 	}
 
 	// KLUDGE because there is no way to make generic struct tag,
@@ -130,7 +141,7 @@ func DecodeResp[E Entities](body io.ReadCloser) (*ApiResponse[E], error) {
 		b = bytes.Replace(data, []byte("time_entries"), []byte("Items"), 1)
 	}
 	if err = json.Unmarshal(b, &apiResp); err != nil {
-		return nil, err
+		return nil, errors.Join(JsonDecodeError, err)
 	}
 
 	// TODO find a way to make generic struct tag for simplify code:
@@ -146,7 +157,7 @@ func DecodeResp[E Entities](body io.ReadCloser) (*ApiResponse[E], error) {
 func BuildApiUrl(base, endpoint string, v *url.Values, p int) (string, error) {
 	uri, err := url.JoinPath(base, endpoint)
 	if err != nil {
-		return "", err
+		return "", errors.Join(UrlJoinPathError, err)
 	}
 
 	if p > 1 {
@@ -156,13 +167,13 @@ func BuildApiUrl(base, endpoint string, v *url.Values, p int) (string, error) {
 	if rq := v.Encode(); rq != "" {
 		u, err := url.Parse(uri)
 		if err != nil {
-			return "", err
+			return "", errors.Join(UrlParseError, err)
 		}
 		u.RawQuery = rq
 		return u.String(), nil
 	}
 
-	return uri, err
+	return uri, nil
 }
 
 // Redmine API Endpoint URL of redmine entity: projects, issues or time entries
@@ -181,7 +192,7 @@ func ApiEndpointURL[E Entities](ac *ApiConfig, page int) (string, error) {
 		v.Set("to", ac.EndDate.Format("2006-01-02"))
 		return BuildApiUrl(ac.Url, TimeEntriesEndpoint, &v, page)
 	}
-	return "", fmt.Errorf("unknown entity")
+	return "", nil
 }
 
 // Get Redmine entities
@@ -190,10 +201,13 @@ func Get[E Entities](ac *ApiConfig, page int) (*ApiResponse[E], error) {
 
 	api_endpoint_url, err := ApiEndpointURL[E](ac, page)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(ApiEndpointUrlFatalError, err)
 	}
 
-	req, _ := http.NewRequest("GET", api_endpoint_url, nil)
+	req, err := http.NewRequest("GET", api_endpoint_url, nil)
+	if err != nil {
+		return nil, errors.Join(ApiNewRequestFatalError, err)
+	}
 	req.Header.Add("User-Agent", "redmine go client v0.1")
 	req.Header.Add("X-Redmine-API-Key", ac.Token)
 	if ac.LogEnabled {
@@ -201,7 +215,7 @@ func Get[E Entities](ac *ApiConfig, page int) (*ApiResponse[E], error) {
 	}
 	res, err := http_cli.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(HttpError, err)
 	}
 	if ac.LogEnabled {
 		log.Printf("< %s", res.Status)
@@ -228,7 +242,22 @@ func Scroll[E Entities](ac *ApiConfig) (<-chan E, <-chan error) {
 		for oneMore {
 			r, err := Get[E](ac, p)
 			if err != nil {
+				// first of all send error to err channel
 				errChan <- err
+				// analyze error and perform appropriate action
+				switch {
+				case errors.Is(err, JsonDecodeError):
+					log.Println(err)
+				case errors.Is(err, IoReadError):
+					log.Println(err)
+				case errors.Is(err, ApiEndpointUrlFatalError):
+					log.Fatal("fatal error", err)
+				case errors.Is(err, ApiNewRequestFatalError):
+					log.Fatal("fatal error", err)
+				case errors.Is(err, HttpError):
+					log.Println(err)
+					// TODO control retries: count and delay...
+				}
 				continue
 			}
 			if r.Limit > 0 {

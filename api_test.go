@@ -1,6 +1,7 @@
 package redmine
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -261,11 +262,37 @@ func TestScroll(t *testing.T) {
 		select {
 		case x := <-dataChan:
 			t.Fatalf("expected not found error, got: %v", x)
-		case <-errChan:
+		case err := <-errChan:
+			if !errors.Is(err, JsonDecodeError) {
+				t.Fatalf("expected JsonDecodeError, got: %s", err)
+			}
 			return
 		case <-time.After(time.Second * 10):
 			t.Fatal("Time out: http server does not respond")
 		}
 
 	})
+
+	// test malformed Redmine API endpoint url
+	t.Run("malformed api endpoint url", func(t *testing.T) {
+		oldUrl := apiConfig.Url
+		apiConfig.Url = "sd://sdsdsd"
+
+		dataChan, errChan := Scroll[Project](&apiConfig)
+
+		select {
+		case x := <-dataChan:
+			t.Fatalf("expected not found error, got: %v", x)
+		case err := <-errChan:
+			if !errors.Is(err, HttpError) {
+				t.Fatalf("expected HttpError, got: %s", err)
+			}
+			return
+		case <-time.After(time.Second * 10):
+			t.Fatal("Time out: http server does not respond")
+		}
+
+		apiConfig.Url = oldUrl
+	})
+
 }
