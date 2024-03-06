@@ -348,3 +348,13 @@ func TestEntityFormatting(t *testing.T) {
 		}
 	})
 }
+
+func TestUnmarshalJSON2Date(t *testing.T) {
+	d := Date{}
+
+	// unexpected format
+	err := d.UnmarshalJSON([]byte(`"Jan 01 2024"`))
+	if !errors.Is(err, JsonDecodeError) {
+		t.Errorf("expected JsonDecodeError, got: %s", err)
+	}
+}
