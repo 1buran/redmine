@@ -1,3 +1,7 @@
+// This is a lightweight Redmine API client.
+//
+// It doesn't do a lot of things, you might probably only be interested in the
+// scrolling feature [Scroll].
 package redmine
 
 import (
@@ -13,18 +17,21 @@ import (
 	"time"
 )
 
+// Redmine REST API endpoints:
 const (
 	ProjectsApiEndpoint = "/projects.json"
 	IssuesApiEndpoint   = "/issues.json"
 	TimeEntriesEndpoint = "/time_entries.json"
 )
 
+// Time Entries filtration by diapason of dates and user id.
 type TimeEntriesFilter struct {
 	StartDate time.Time
 	EndDate   time.Time
 	UserId    string
 }
 
+// Config of Redmine REST API client: url, token, logging and time entries filtration.
 type ApiConfig struct {
 	Url        string
 	Token      string
@@ -32,6 +39,7 @@ type ApiConfig struct {
 	TimeEntriesFilter
 }
 
+// A Redmine issue entity.
 type Issue struct {
 	Id      int    `json:"id"`
 	Subject string `json:"subject"`
@@ -39,6 +47,7 @@ type Issue struct {
 	Project `json:"project"`
 }
 
+// A Redmine project entity.
 type Project struct {
 	Id    int    `json:"id"`
 	Name  string `json:"name"`
@@ -50,15 +59,29 @@ type Project struct {
 	IsPublic bool `json:"is_public"`
 }
 
+// A Redmine user entity.
 type User struct {
 	Id   int    `json:"id"`
 	Name string `json:"name"`
 }
 
+// A date type is needed for proper parsing (unmarshaling) of redmine date format used in JSON.
 type Date struct {
 	time.Time
 }
 
+// There are some custom error types, from low level to high level errors
+// which are aggregates of first ones.
+//
+// Typically you should be expect only these high level errors in errChan:
+//   - [JsonDecodeError]: errors related to unmarshaling redmine server response
+//   - [IoReadError]: errors related to read input
+//   - [HttpError]: errors related to network layer
+//   - [ApiEndpointUrlFatalError]: fatal errors that means that most probably
+//     the url of redmine api is malformed or bogus, please check it
+//   - [ApiNewRequestFatalError]: actually will not be thrown (see the comments in code)
+//
+// All package errors:
 var (
 	JsonDecodeError          = errors.New("JSON decode error")
 	IoReadError              = errors.New("io.ReadAll error")
@@ -69,6 +92,7 @@ var (
 	HttpError                = errors.New("http error")
 )
 
+// Unmarshaling redmine dates.
 func (d *Date) UnmarshalJSON(b []byte) error {
 	t, err := time.Parse("2006-01-02", string(bytes.Trim(b, "\"")))
 	if err != nil {
@@ -82,6 +106,7 @@ func (d Date) String() string {
 	return d.Time.Format("2006-01-02")
 }
 
+// A Redmine time entries.
 type TimeEntry struct {
 	Id      int `json:"id"`
 	Project `json:"project"`
@@ -107,17 +132,19 @@ func (i Issue) String() string {
 	return fmt.Sprintf("%-5d %s %s", i.Id, i.Project.Name, i.Subject)
 }
 
+// Data type constraint, a quick glance at which will let you know the supported data types
+// for fetching from redmine server.
 type Entities interface {
 	Project | Issue | TimeEntry
 }
 
-// Redmine API items response container
+// Redmine API items response container.
 type ApiResponse[E Entities] struct {
 	Items []E
 	Pagination
 }
 
-// Decode JSON Redmine API response to local entities
+// Decode JSON Redmine API response to package types.
 func DecodeResp[E Entities](body io.ReadCloser) (*ApiResponse[E], error) {
 	defer body.Close()
 	apiResp := ApiResponse[E]{}
@@ -153,7 +180,7 @@ func DecodeResp[E Entities](body io.ReadCloser) (*ApiResponse[E], error) {
 
 }
 
-// Add pagination query string to URL
+// Add pagination query string to URL.
 func BuildApiUrl(base, endpoint string, v *url.Values, p int) (string, error) {
 	uri, err := url.JoinPath(base, endpoint)
 	if err != nil {
@@ -176,7 +203,8 @@ func BuildApiUrl(base, endpoint string, v *url.Values, p int) (string, error) {
 	return uri, nil
 }
 
-// Redmine API Endpoint URL of redmine entity: projects, issues or time entries
+// Construct the final URL for http requests depending on redmine entities
+// (projects, issues or time entries) and pagination, filtration.
 func ApiEndpointURL[E Entities](ac *ApiConfig, page int) (u string, err error) {
 	v := url.Values{}
 	e := new(E)
@@ -195,7 +223,7 @@ func ApiEndpointURL[E Entities](ac *ApiConfig, page int) (u string, err error) {
 	return
 }
 
-// Get Redmine entities
+// Get Redmine entities respecting the setted filtration (time entries) and page of pagination.
 func Get[E Entities](ac *ApiConfig, page int) (*ApiResponse[E], error) {
 	http_cli := http.Client{}
 
@@ -228,12 +256,18 @@ func Get[E Entities](ac *ApiConfig, page int) (*ApiResponse[E], error) {
 	return DecodeResp[E](res.Body)
 }
 
-// Scroll over Redmine API paginated responses, the pagination of redmine is based on offset&limit,
-// but in URL you may use query string param ?page=, e.g. for 53 items and limit=25 it will be
+// Scroll over Redmine API paginated responses. It going through all available data,
+// so it may generate a lot of http requests (depending on a size of data and pagination limit).
+//
+// The pagination of redmine is based on offset&limit,
+// but in URL you may use query string param ?page=, e.g. for 53 issues and limit=25 it will be
 // three requests:
-// 0  25 53 - [0, 25] page=1
-// 25 25 53 - [25, 50] page=2
-// 50 25 53 - [50, 53] page=3
+//   - 0  25 53 - [0, 25] /issues.json?page=1 or omitted page number: /issues.json
+//   - 25 25 53 - [25, 50] /issues.json?page=2
+//   - 50 25 53 - [50, 53] /issues.json?page=3
+//
+// This function do that automatically and send all the data to channel,
+// if any error occurs, it will be send to the second, errors channel.
 func Scroll[E Entities](ac *ApiConfig) (<-chan E, <-chan error) {
 	var p int
 	dataChan := make(chan E)
