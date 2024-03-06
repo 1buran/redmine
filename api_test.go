@@ -327,3 +327,24 @@ func TestDecodeResp(t *testing.T) {
 		t.Errorf("expected IoReadError, got: %s", err)
 	}
 }
+
+func TestEntityFormatting(t *testing.T) {
+	t.Run("issue", func(t *testing.T) {
+		i := Issue{1, "subj", "desc", Project{1, "project", "", "", false}}
+		expected := "1     project subj"
+		if i.String() != expected {
+			t.Errorf("expected %s, got: %s", expected, i.String())
+		}
+	})
+	t.Run("time entry", func(t *testing.T) {
+		u := User{1, "user"}
+		p := Project{1, "project", "", "", false}
+		i := Issue{1, "subj", "desc", p}
+		d := Date{}
+		te := TimeEntry{1, p, i, u, 7.35, "working", d}
+		expected := "1      7.35 0001-01-01 user            working"
+		if te.String() != expected {
+			t.Errorf("expected %s, got: %s", expected, te.String())
+		}
+	})
+}
