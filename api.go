@@ -177,22 +177,22 @@ func BuildApiUrl(base, endpoint string, v *url.Values, p int) (string, error) {
 }
 
 // Redmine API Endpoint URL of redmine entity: projects, issues or time entries
-func ApiEndpointURL[E Entities](ac *ApiConfig, page int) (string, error) {
+func ApiEndpointURL[E Entities](ac *ApiConfig, page int) (u string, err error) {
 	v := url.Values{}
 	e := new(E)
 	switch (interface{})(*e).(type) {
 	case Project:
-		return BuildApiUrl(ac.Url, ProjectsApiEndpoint, &v, page)
+		u, err = BuildApiUrl(ac.Url, ProjectsApiEndpoint, &v, page)
 	case Issue:
-		return BuildApiUrl(ac.Url, IssuesApiEndpoint, &v, page)
+		u, err = BuildApiUrl(ac.Url, IssuesApiEndpoint, &v, page)
 	case TimeEntry:
 		// filter by user and dates: get the time entries of user for a month
 		v.Set("user_id", ac.UserId)
 		v.Set("from", ac.StartDate.Format("2006-01-02"))
 		v.Set("to", ac.EndDate.Format("2006-01-02"))
-		return BuildApiUrl(ac.Url, TimeEntriesEndpoint, &v, page)
+		u, err = BuildApiUrl(ac.Url, TimeEntriesEndpoint, &v, page)
 	}
-	return "", nil
+	return
 }
 
 // Get Redmine entities
