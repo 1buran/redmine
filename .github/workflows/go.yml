@@ -27,7 +27,7 @@ jobs:
       - name: Display Go version
         run: go version
 
-      - name: Run coverage
+      - name: Run tests with coverage report enabled
         run: go test -race -coverprofile=coverage.txt -covermode=atomic -v
 
       - name: Upload coverage reports to Codecov
