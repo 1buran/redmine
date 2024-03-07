@@ -17,7 +17,6 @@ import (
 	"time"
 )
 
-// Redmine REST API endpoints:
 const (
 	ProjectsApiEndpoint = "/projects.json"
 	IssuesApiEndpoint   = "/issues.json"
@@ -80,8 +79,6 @@ type Date struct {
 //   - [ApiEndpointUrlFatalError]: fatal errors that means that most probably
 //     the url of redmine api is malformed or bogus, please check it
 //   - [ApiNewRequestFatalError]: actually will not be thrown (see the comments in code)
-//
-// All package errors:
 var (
 	JsonDecodeError          = errors.New("JSON decode error")
 	IoReadError              = errors.New("io.ReadAll error")
@@ -266,7 +263,7 @@ func Get[E Entities](ac *ApiConfig, page int) (*ApiResponse[E], error) {
 //   - 25 25 53 - [25, 50] /issues.json?page=2
 //   - 50 25 53 - [50, 53] /issues.json?page=3
 //
-// This function do that automatically and send all the data to channel,
+// This function do this automatically and send all the data to channel,
 // if any error occurs, it will be send to the second, errors channel.
 func Scroll[E Entities](ac *ApiConfig) (<-chan E, <-chan error) {
 	var p int
