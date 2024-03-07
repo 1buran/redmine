@@ -1,5 +1,7 @@
 # Redmine REST API client
 [![codecov](https://codecov.io/github/mrBuran/redmine/graph/badge.svg?token=NNJYP8B5V8)](https://codecov.io/github/mrBuran/redmine)
+[![Go Reference](https://pkg.go.dev/badge/github.com/mrBuran/redmine.svg)](https://pkg.go.dev/github.com/mrBuran/redmine)
+[![goreportcard](https://goreportcard.com/badge/github.com/mrBuran/redmine)](https://goreportcard.com/report/github.com/mrBuran/redmine)
 
 This is a lightweight Redmine API client.
 
