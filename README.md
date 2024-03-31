@@ -1,4 +1,5 @@
 # Redmine REST API client
+
 [![codecov](https://codecov.io/github/mrBuran/redmine/graph/badge.svg?token=NNJYP8B5V8)](https://codecov.io/github/mrBuran/redmine)
 [![Go Reference](https://pkg.go.dev/badge/github.com/mrBuran/redmine.svg)](https://pkg.go.dev/github.com/mrBuran/redmine)
 [![goreportcard](https://goreportcard.com/badge/github.com/mrBuran/redmine)](https://goreportcard.com/report/github.com/mrBuran/redmine)
@@ -27,6 +28,7 @@ go get github.com/mrBuran/redmine
 ## Usage
 
 Supported Redmine types:
+
 - `User`
 - `Project`
 - `TimeEntry`
@@ -82,6 +84,7 @@ for {
 ```
 
 There are some custom error types, from low level to high level errors which are aggregates of first ones. Typically you should be expect only these high level errors in errChan:
+
 - `JsonDecodeError`: errors related to unmarshaling redmine server response
 - `IoReadError`: errors related to read input (`io.ReadAll(body)`)
 - `HttpError`: errors related to network layer (`http_client.Do(req)`)
