@@ -1,8 +1,8 @@
 # Redmine REST API client
 
-[![codecov](https://codecov.io/github/mrBuran/redmine/graph/badge.svg?token=NNJYP8B5V8)](https://codecov.io/github/mrBuran/redmine)
-[![Go Reference](https://pkg.go.dev/badge/github.com/mrBuran/redmine.svg)](https://pkg.go.dev/github.com/mrBuran/redmine)
-[![goreportcard](https://goreportcard.com/badge/github.com/mrBuran/redmine)](https://goreportcard.com/report/github.com/mrBuran/redmine)
+[![codecov](https://codecov.io/github/1buran/redmine/graph/badge.svg?token=NNJYP8B5V8)](https://codecov.io/github/1buran/redmine)
+[![Go Reference](https://pkg.go.dev/badge/github.com/1buran/redmine.svg)](https://pkg.go.dev/github.com/1buran/redmine)
+[![goreportcard](https://goreportcard.com/badge/github.com/1buran/redmine)](https://goreportcard.com/report/github.com/1buran/redmine)
 
 This is a lightweight Redmine API client.
 
@@ -22,7 +22,7 @@ Another functional will be added (maybe) later...
 ## Installation
 
 ```sh
-go get github.com/mrBuran/redmine
+go get github.com/1buran/redmine
 ```
 
 ## Usage
