@@ -23,7 +23,7 @@ const (
 	TimeEntriesEndpoint = "/time_entries.json"
 )
 
-// Time Entries filtration by diapason of dates and user id.
+// Time Entries filtration by range of dates and user id.
 type TimeEntriesFilter struct {
 	StartDate time.Time
 	EndDate   time.Time
@@ -156,7 +156,7 @@ func DecodeResp[E Entities](body io.ReadCloser) (*ApiResponse[E], error) {
 
 	var b []byte
 	e := new(E)
-	switch (interface{})(*e).(type) {
+	switch any(*e).(type) {
 	case Project:
 		b = bytes.Replace(data, []byte("projects"), []byte("Items"), 1)
 	case Issue:
@@ -205,7 +205,7 @@ func BuildApiUrl(base, endpoint string, v *url.Values, p int) (string, error) {
 func ApiEndpointURL[E Entities](ac *ApiConfig, page int) (u string, err error) {
 	v := url.Values{}
 	e := new(E)
-	switch (interface{})(*e).(type) {
+	switch any(*e).(type) {
 	case Project:
 		u, err = BuildApiUrl(ac.Url, ProjectsApiEndpoint, &v, page)
 	case Issue:
