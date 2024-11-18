@@ -46,25 +46,23 @@ timeEntriesFilter := redmine.TimeEntriesFilter{
     UserId: "1"
 }
 
-// Create api config: set Redmine REST API url, token, enable or disable logging
-apiConfig := redmine.ApiConfig{
-    Url: "https://example.com",
-    Token: "asdadwwefwefwf",
-    LogEnabled: true,
-    timeEntriesFilter
-}
+// Create an API client: set Redmine REST API url, token, enable or disable logging
+apiClient := redmine.CreateApiClient(
+    "https://example.com", "asdadwwefwefwf", true, timeEntriesFilter)
 
 // Open the channels to data and errors from the redmine client:
-// dataChan, errChan := redmine.Scroll[redmine.Project](&apiConfig)
-// dataChan, errChan := redmine.Scroll[redmine.Issue](&apiConfig)
-dataChan, errChan := redmine.Scroll[redmine.TimeEntry](&apiConfig)
+// dataChan, errChan := redmine.Scroll[redmine.Projects](apiClient)
+// dataChan, errChan := redmine.Scroll[redmine.Issues](apiClient)
+dataChan, errChan := redmine.Scroll[redmine.TimeEntries](apiClient)
 for {
     select {
-    case t, ok := <-dataChan:
+    case data, ok := <-dataChan:
         if ok { // data channel is open
-            // perform action on the gotten item e.g. print the data
-            fmt.Printf("On %s user spent %.2f hours for %s\n", t.SpentOn, t.Hours, t.Comment)
-            continue // go to the next iter of for loop
+            // perform action on the gotten items e.g. print the data
+            for _, t := range data.Items {
+                fmt.Printf("On %s user spent %.2f hours for %s\n", t.SpentOn, t.Hours, t.Comment)
+            }
+            continue
         }
         return // data channel is closed, all data is transmitted, return to the main loop
     case err, ok := <-errChan:

@@ -158,24 +158,20 @@ func GetResponseParamsFromUrl(qs string) *ApiResponseParams {
 	return &p
 }
 
-func CreateApiConfig(url string) (ac *ApiConfig) {
-	// Actually the filtration is not used in tests, but its needed for apiConfig.
+func CreateTestApiClient(url string) (ac *ApiClient) {
+	// Actually the filtration is not used in tests, but its needed for apiClient.
 	timeEntriesFilter := TimeEntriesFilter{
 		time.Now(),
 		time.Now().Add(time.Hour * 24 * 10),
 		"1",
 	}
-	apiConfig := ApiConfig{
-		url,
-		"ababab",
-		true,
-		timeEntriesFilter,
-	}
-	return &apiConfig
+	return CreateApiClient(url, "ababab", true, timeEntriesFilter)
 }
 
 // Test scroll over Redmine REST API paginated JSON resposes
 func TestScroll(t *testing.T) {
+	t.Parallel()
+
 	handleReq := func(w http.ResponseWriter, r *http.Request) {
 		var payload string
 
@@ -202,17 +198,20 @@ func TestScroll(t *testing.T) {
 	// test scrolling of projects
 	t.Run("projects", func(t *testing.T) {
 		i := 1
-		apiConfig := CreateApiConfig(testServer.URL)
-		dataChan, _ := Scroll[Project](apiConfig)
-		for p := range dataChan {
-			expectedDesc := fmt.Sprintf("Project %d Description", i)
-			if p.Desc != expectedDesc {
-				t.Errorf("expected %s, got %s", expectedDesc, p.Desc)
+		apiClient := CreateTestApiClient(testServer.URL)
+		dataChan, _ := Scroll[Projects](apiClient)
+
+		for projects := range dataChan {
+			for _, p := range projects.Items {
+				expectedDesc := fmt.Sprintf("Project %d Description", i)
+				if p.Desc != expectedDesc {
+					t.Errorf("expected %s, got %s", expectedDesc, p.Desc)
+				}
+				if p.Id != i {
+					t.Errorf("expected %d, got %d", i, p.Id)
+				}
+				i++
 			}
-			if p.Id != i {
-				t.Errorf("expected %d, got %d", i, p.Id)
-			}
-			i++
 		}
 		if i-1 != TotalCount {
 			t.Errorf("expected %d items, got: %d", TotalCount, i-1)
@@ -222,17 +221,19 @@ func TestScroll(t *testing.T) {
 	// test scrolling of issues
 	t.Run("issues", func(t *testing.T) {
 		i := 1
-		apiConfig := CreateApiConfig(testServer.URL)
-		dataChan, _ := Scroll[Issue](apiConfig)
-		for p := range dataChan {
-			expectedDesc := fmt.Sprintf("Issue %d Description", i)
-			if p.Desc != expectedDesc {
-				t.Errorf("expected %s, got %s", expectedDesc, p.Desc)
+		apiClient := CreateTestApiClient(testServer.URL)
+		dataChan, _ := Scroll[Issues](apiClient)
+		for issues := range dataChan {
+			for _, p := range issues.Items {
+				expectedDesc := fmt.Sprintf("Issue %d Description", i)
+				if p.Desc != expectedDesc {
+					t.Errorf("expected %s, got %s", expectedDesc, p.Desc)
+				}
+				if p.Id != i {
+					t.Errorf("expected %d, got %d", i, p.Id)
+				}
+				i++
 			}
-			if p.Id != i {
-				t.Errorf("expected %d, got %d", i, p.Id)
-			}
-			i++
 		}
 		if i-1 != TotalCount {
 			t.Errorf("expected %d items, got: %d", TotalCount, i-1)
@@ -242,17 +243,20 @@ func TestScroll(t *testing.T) {
 	// test scrolling of time entries
 	t.Run("time entries", func(t *testing.T) {
 		i := 1
-		apiConfig := CreateApiConfig(testServer.URL)
-		dataChan, _ := Scroll[TimeEntry](apiConfig)
-		for p := range dataChan {
-			expectedDesc := fmt.Sprintf("Time Entry %d Comment", i)
-			if p.Comment != expectedDesc {
-				t.Errorf("expected %s, got %s", expectedDesc, p.Comment)
+		apiClient := CreateTestApiClient(testServer.URL)
+		dataChan, _ := Scroll[TimeEntries](apiClient)
+
+		for tEntries := range dataChan {
+			for _, p := range tEntries.Items {
+				expectedDesc := fmt.Sprintf("Time Entry %d Comment", i)
+				if p.Comment != expectedDesc {
+					t.Errorf("expected %s, got %s", expectedDesc, p.Comment)
+				}
+				if p.Id != i {
+					t.Errorf("expected %d, got %d", i, p.Id)
+				}
+				i++
 			}
-			if p.Id != i {
-				t.Errorf("expected %d, got %d", i, p.Id)
-			}
-			i++
 		}
 		if i-1 != TotalCount {
 			t.Errorf("expected %d items, got: %d", TotalCount, i-1)
@@ -261,8 +265,8 @@ func TestScroll(t *testing.T) {
 
 	// test HTTP 404 Not Found error
 	t.Run("404 http error", func(t *testing.T) {
-		apiConfig := CreateApiConfig(testServer.URL + "/not-found")
-		dataChan, errChan := Scroll[Project](apiConfig)
+		apiClient := CreateTestApiClient(testServer.URL + "/not-found")
+		dataChan, errChan := Scroll[Projects](apiClient)
 
 		select {
 		case x := <-dataChan:
@@ -277,10 +281,10 @@ func TestScroll(t *testing.T) {
 		}
 	})
 
-	// test http error
+	// // test http error
 	t.Run("http error", func(t *testing.T) {
-		apiConfig := CreateApiConfig("sd://sdsdsd")
-		dataChan, errChan := Scroll[Project](apiConfig)
+		apiClient := CreateTestApiClient("sd://sdsdsd")
+		dataChan, errChan := Scroll[Projects](apiClient)
 
 		select {
 		case x := <-dataChan:
@@ -295,10 +299,10 @@ func TestScroll(t *testing.T) {
 		}
 	})
 
-	// test malformed Redmine API endpoint url
+	// // test malformed Redmine API endpoint url
 	t.Run("malformed api endpoint url", func(t *testing.T) {
-		apiConfig := CreateApiConfig("\n")
-		dataChan, errChan := Scroll[Project](apiConfig)
+		apiClient := CreateTestApiClient("\n")
+		dataChan, errChan := Scroll[Projects](apiClient)
 		select {
 		case x := <-dataChan:
 			t.Fatalf("expected not found error, got: %v", x)
@@ -323,12 +327,14 @@ func (f *fakeReadCloser) Close() error { return errors.New("abort close") }
 
 func TestDecodeResp(t *testing.T) {
 	f := fakeReadCloser{}
-	if _, err := DecodeResp[Project](&f); !errors.Is(err, IoReadError) {
+	if _, err := DecodeResp[Projects](&f); !errors.Is(err, IoReadError) {
 		t.Errorf("expected IoReadError, got: %s", err)
 	}
 }
 
 func TestEntityFormatting(t *testing.T) {
+	t.Parallel()
+
 	t.Run("issue", func(t *testing.T) {
 		i := Issue{1, "subj", "desc", Project{1, "project", "", "", false}}
 		expected := "1     project subj"
