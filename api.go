@@ -5,6 +5,7 @@
 package redmine
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
@@ -30,6 +31,13 @@ var (
 	ApiNewRequestFatalError  = errors.New("cannot create a new request with given url")
 	HttpError                = errors.New("http error")
 	UnknownDataTypeError     = errors.New("unknown or not supported data type requested")
+	ValidationError          = errors.New("Validation error")
+	ZeroTimeDetectedError    = errors.New("Zero timestamp is not allowed")
+
+	ProjectAndIssuePassedError = errors.New("Only one is required: issue_id or project_id")
+	ProjectAndIssueMissedError = errors.New("Neither issue_id or project_id was passed")
+
+	EmptyProjectError = errors.New("Project ID must not be a zero")
 )
 
 // Data type constraint, a quick glance at which will let you know the supported data types
@@ -120,7 +128,7 @@ func Scroll[E Entities](ac *ApiClient) (<-chan E, <-chan error) {
 			}
 
 			dataChan <- *r
-			page = extractNextPage[E](*r)
+			page = extractNextPage(*r)
 		}
 	}()
 
@@ -128,3 +136,26 @@ func Scroll[E Entities](ac *ApiClient) (<-chan E, <-chan error) {
 }
 
 func extractNextPage[E Entities](e E) int { return e.NextPage() }
+
+// Create a redmine entity.
+func Create[P PostData](ac *ApiClient, data P) error {
+	url, err := data.Url(ac.Url)
+	if err != nil {
+		return err
+	}
+
+	if err := data.Validate(); err != nil {
+		return err
+	}
+
+	b, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	if err := ac.Create(url, bytes.NewReader(b)); err != nil {
+		return err
+	}
+
+	return nil
+}

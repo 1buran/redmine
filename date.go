@@ -3,6 +3,7 @@ package redmine
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -19,6 +20,11 @@ func (d *Date) UnmarshalJSON(b []byte) error {
 	}
 	d.Time = t
 	return nil
+}
+
+// Marshaling time.Time object to redmine format.
+func (d Date) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("%q", d.Time.Format("2006-01-02"))), nil
 }
 
 func (d Date) String() string {
