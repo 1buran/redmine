@@ -36,7 +36,7 @@ type TimeEntries struct {
 
 // Payload of Redmine API POST /time_entries.
 type CreateTimeEntryPayload struct {
-	ProjectID  int     `json:"project_id,omitempty"`
+	ProjectID  any     `json:"project_id,omitempty"`
 	IssueID    int     `json:"issue_id,omitempty"`
 	ActivityID int     `json:"activity_id,omitempty"`
 	UserID     int     `json:"user_id,omitempty"`
@@ -51,11 +51,11 @@ func (p CreateTimeEntryPayload) Validate() error {
 		return errors.Join(ValidationError, ZeroTimeDetectedError)
 	}
 
-	if p.ProjectID > 0 && p.IssueID > 0 {
+	if p.ProjectID != nil && p.IssueID > 0 {
 		return errors.Join(ValidationError, ProjectAndIssuePassedError)
 	}
 
-	if p.ProjectID == 0 && p.IssueID == 0 {
+	if p.ProjectID == nil && p.IssueID == 0 {
 		return errors.Join(ValidationError, ProjectAndIssueMissedError)
 	}
 	return nil
